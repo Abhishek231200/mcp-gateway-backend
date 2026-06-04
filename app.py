@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
+from rate_limiter import check_rate_limit
 
 app = FastAPI(title="Backend API", version="1.0.0")
 
@@ -18,12 +19,15 @@ def health():
 
 @app.post("/auth/token", response_model=TokenResponse)
 def get_token(req: TokenRequest):
+    check_rate_limit(req.api_key)
     if req.api_key not in VALID_KEYS:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return {"token": f"tok-{req.api_key}-xyz", "expires_in": 3600}
 
 @app.post("/auth/refresh")
 def refresh_token(authorization: str = Header(...)):
+    api_key = authorization.removeprefix("Bearer tok-").split("-")[0]
+    check_rate_limit(api_key)
     if not authorization.startswith("Bearer tok-"):
         raise HTTPException(status_code=401, detail="Invalid token")
     return {"token": authorization.replace("Bearer ", "") + "-refreshed", "expires_in": 3600}
