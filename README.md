@@ -1,1 +1,3 @@
-# mcp-gateway-backend
+# Backend API
+
+Auth service for internal tooling.
